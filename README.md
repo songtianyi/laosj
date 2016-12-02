@@ -6,7 +6,7 @@
     go get github.com/songtianyi/laosj
 ######安装redis
 	略
-######编译运行样例
+######编译并运行样例
 	go build mzituzp.go
 	./mzituzp
 
