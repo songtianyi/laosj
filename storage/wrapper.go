@@ -15,5 +15,5 @@
 package storage
 
 type StorageWrapper interface {
-	Save([]byte) error
+	Save([]byte) (error, string)
 }

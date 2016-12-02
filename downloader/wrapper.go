@@ -35,17 +35,17 @@ type Url struct {
 
 type Downloader struct {
 	// exported
-	ConcurrencyLimit int    // number of goroutines to download
-	RedisConnStr     string // redis connection string
-	SourceQueue      string
-	Store            storage.StorageWrapper
+	ConcurrencyLimit int                    // number of goroutines to download
+	RedisConnStr     string                 // redis connection string
+	SourceQueue      string                 // url queue
+	Store            storage.StorageWrapper // for saving downloaded binary
 	UrlChannelFactor int
 
 	// inner use
-	sema chan struct{} // for concurrency-limiting
-	flag chan struct{}
-	urls chan Url
-	rc   *rrredis.RedisClient
+	sema chan struct{}        // for concurrency-limiting
+	flag chan struct{}        // stop flag
+	urls chan Url             // url channel queue
+	rc   *rrredis.RedisClient // redis client
 }
 
 func (s *Downloader) Start() {
@@ -65,17 +65,18 @@ func (s *Downloader) Start() {
 	go func() {
 	loop1:
 		for {
-			url, err := rc.LPop(s.SourceQueue)
+			url, err := s.rc.LPop(s.SourceQueue)
 			if err == rrredis.Nil {
-				// empty queue, sleep
+				// empty queue, sleep while
 				time.Sleep(5 * time.Second)
 				// continue the loop
 				continue
 			}
 			if err != nil {
 				logs.Error(err)
+				// TODO reconnect to redis
 				// wait recovery
-				time.Sleep(500 * time.Second)
+				time.Sleep(300 * time.Second)
 				// continue the loop
 				continue
 			}
@@ -97,11 +98,12 @@ loop2:
 		case <-s.flag:
 			// be stopped
 			for url := range s.urls {
-				// push back to queue
+				// push back to redis queue
 				if _, err := rc.RPush(s.SourceQueue, url.v); err != nil {
 					logs.Error(err)
 				}
 			}
+			// end downloader
 			break loop2
 		case s.sema <- struct{}{}:
 			// s.sema not full
@@ -126,21 +128,24 @@ loop2:
 					if err := rc.HMSet(URL_CACHE_KEY, map[string]string{
 						url.v: "1",
 					}); err != nil {
-						logs.Error("Push to cache failed,%s", err)
+						logs.Error("Push to cache failed, %s", err)
 					}
 				}
 			}()
 		case <-tick:
+			// print this every 2 seconds
 			logs.Info("In queue: %d, doing: %d", len(s.urls), len(s.sema))
 		}
 	}
 
 }
 
+// stop downloader
 func (s *Downloader) Stop() {
 	close(s.flag)
 }
 
+// wait all urls in redis queue be downloaded
 func (s *Downloader) WaitCloser() {
 loop:
 	for {
@@ -195,7 +200,7 @@ func (s *Downloader) download(url string, rc *rrredis.RedisClient) error {
 		return err
 	}
 	// save
-	if err := s.Store.Save(b); err != nil {
+	if err, _ := s.Store.Save(b); err != nil {
 		return err
 	}
 	return nil

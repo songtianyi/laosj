@@ -20,7 +20,7 @@ import (
 )
 
 type LocalDiskStorage struct {
-	Dir string
+	Dir string // the directory where to save binary
 }
 
 func NewLocalDiskStorage(dir string) StorageWrapper {
@@ -30,19 +30,19 @@ func NewLocalDiskStorage(dir string) StorageWrapper {
 	return s
 }
 
-func (s *LocalDiskStorage) Save(data []byte) error {
+func (s *LocalDiskStorage) Save(data []byte) (error, string) {
 	// random name
-	path := s.Dir + rrutils.NewV4().String()
+	filename := rrutils.NewV4().String()
 
 	//open a file for writing
-	file, err := os.Create(path)
+	file, err := os.Create(s.Dir + filename)
 	if err != nil {
-		return err
+		return err, filename
 	}
 	defer file.Close()
 	if _, err := file.Write(data); err != nil {
-		return err
+		return err, filename
 	}
-	return nil
+	return nil, filename
 
 }

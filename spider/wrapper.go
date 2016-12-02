@@ -28,9 +28,9 @@ const (
 )
 
 type Spider struct {
-	Rules    []string
-	IndexUrl string
-	LeafType int
+	Rules    []string // goquery rules
+	IndexUrl string   // first page that spider would deal with
+	LeafType int      // return Text() or Html()
 
 	mu sync.Mutex
 }
@@ -59,7 +59,7 @@ func (s *Spider) do(url string, level int) ([]string, error) {
 		go func() {
 			defer wg.Done()
 			if len(s.Rules) > level+1 {
-				// there a deeper level
+				// there a deeper level page
 				// find herf url
 				content, _ := sl.Html()
 				m := regexp.MustCompile("href=\"(\\S+)\"").FindStringSubmatch(content)
