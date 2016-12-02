@@ -164,12 +164,12 @@ loop:
 	}
 }
 
-func (s *Downloader) download(url string, rc *rrredis.RedisClient) error {
+func (s *Downloader) download(url string) error {
 
 	defer func() { <-s.sema }() // release
 
 	// check if this url is downloaded
-	exist, err := rc.HMExists(URL_CACHE_KEY, url)
+	exist, err := s.rc.HMExists(URL_CACHE_KEY, url)
 	if err != nil {
 		return err
 	}
@@ -194,12 +194,13 @@ func (s *Downloader) download(url string, rc *rrredis.RedisClient) error {
 		return fmt.Errorf("StatusCode %d", response.StatusCode)
 	}
 
-	// get binary
+	// read binary from body
 	b, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		return err
 	}
-	// save
+
+	// save binary to storage
 	if err, _ := s.Store.Save(b); err != nil {
 		return err
 	}
