@@ -37,7 +37,7 @@ func main() {
 		d.Start()
 	}()
 
-	// step1: find total index pages
+	// step1: find total pages
 	s := &spider.Spider{
 		IndexUrl: "http://www.mzitu.com/share",
 		Rules: []string{
@@ -52,7 +52,7 @@ func main() {
 	}
 	max := spider.FindMaxFromSliceString(1, rs)
 
-	// step2: for every index page, find every post entrance
+	// step2: for every page, find all img tags
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 	step2 := make([]string, 0)
