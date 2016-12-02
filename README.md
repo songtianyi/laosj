@@ -4,4 +4,9 @@
 ##快速上手
 ######下载
     go get github.com/songtianyi/laosj
+######安装redis
+	略
+######编译运行样例
+	go build mzituzp.go
+	./mzituzp
 
