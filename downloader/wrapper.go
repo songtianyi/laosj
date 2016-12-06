@@ -35,7 +35,7 @@ type Url struct {
 
 type Downloader struct {
 	// exported
-	ConcurrencyLimit int                    // number of goroutines to download
+	ConcurrencyLimit int                    // max number of goroutines to download
 	RedisConnStr     string                 // redis connection string
 	SourceQueue      string                 // url queue
 	Store            storage.StorageWrapper // for saving downloaded binary
@@ -115,7 +115,7 @@ loop2:
 				break loop2
 			}
 			go func() {
-				if err := s.download(url.v, rc); err != nil {
+				if err := s.download(url.v); err != nil {
 					// download fail
 					// push back to redis
 					logs.Error("Download %s fail, %s", url.v, err)
