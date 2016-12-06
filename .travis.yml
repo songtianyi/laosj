@@ -9,5 +9,5 @@ install:
     - go get github.com/songtianyi/rrframework
 
 script:
-    go build mzitu.go
-    go build mzituzp.go
+    - go build mzitu.go
+    - go build mzituzp.go
