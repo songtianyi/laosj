@@ -26,15 +26,15 @@ import (
 )
 
 const (
-	URL_CACHE_KEY = "DATA:IMAGE:DOWNLOADED:URLS" // key for downloaded url cache
+	URL_CACHE_KEY = "DATA:IMAGE:DOWNLOADED:URLS" // Key for downloaded url cache
 )
 
-// struct channel for urls
+// Struct channel for urls
 type Url struct {
 	v string
 }
 
-// downloader get urls from redis SourceQueue
+// Downloader get urls from redis SourceQueue
 // and download them concurrently
 // then save downloaded binary to storage
 type Downloader struct {
