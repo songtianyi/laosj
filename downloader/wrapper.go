@@ -29,7 +29,7 @@ const (
 	URL_CACHE_KEY = "DATA:IMAGE:DOWNLOADED:URLS" // Key for downloaded url cache
 )
 
-// Struct channel for urls
+// Struct channel
 type Url struct {
 	v string
 }
@@ -68,31 +68,7 @@ func (s *Downloader) Start() {
 	s.urls = make(chan Url, s.ConcurrencyLimit*s.UrlChannelFactor)
 
 	go func() {
-	loop1:
-		for {
-			url, err := s.rc.LPop(s.SourceQueue)
-			if err == rrredis.Nil {
-				// empty queue, sleep while
-				time.Sleep(5 * time.Second)
-				// continue the loop
-				continue
-			}
-			if err != nil {
-				logs.Error(err)
-				// TODO reconnect to redis
-				// wait recovery
-				time.Sleep(300 * time.Second)
-				// continue the loop
-				continue
-			}
-			select {
-			case <-s.flag:
-				// be stopped
-				break loop1
-			case s.urls <- Url{v: url}:
-				// trying to push url to urls channel
-			}
-		}
+		s.getUrlFromSourceQueue()
 	}()
 
 	tick := time.Tick(2 * time.Second)
@@ -210,4 +186,32 @@ func (s *Downloader) download(url string) error {
 		return err
 	}
 	return nil
+}
+
+func (s *Downloader) getUrlFromSourceQueue() {
+loop:
+	for {
+		url, err := s.rc.LPop(s.SourceQueue)
+		if err == rrredis.Nil {
+			// empty queue, sleep while
+			time.Sleep(5 * time.Second)
+			// continue the loop
+			continue
+		}
+		if err != nil {
+			logs.Error(err)
+			// TODO reconnect to redis
+			// wait recovery
+			time.Sleep(300 * time.Second)
+			// continue the loop
+			continue
+		}
+		select {
+		case <-s.flag:
+			// be stopped
+			break loop
+		case s.urls <- Url{v: url}:
+			// trying to push url to urls channel
+		}
+	}
 }
