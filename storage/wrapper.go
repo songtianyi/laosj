@@ -14,6 +14,7 @@
 
 package storage
 
+// Gerneral storage wrapper
 type StorageWrapper interface {
-	Save([]byte) (error, string)
+	Save([]byte) (error, string) // do save binary
 }

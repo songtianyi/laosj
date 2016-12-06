@@ -26,13 +26,17 @@ import (
 )
 
 const (
-	URL_CACHE_KEY = "DATA:IMAGE:DOWNLOADED:URLS"
+	URL_CACHE_KEY = "DATA:IMAGE:DOWNLOADED:URLS" // key for downloaded url cache
 )
 
+// struct channel for urls
 type Url struct {
 	v string
 }
 
+// downloader get urls from redis SourceQueue
+// and download them concurrently
+// then save downloaded binary to storage
 type Downloader struct {
 	// exported
 	ConcurrencyLimit int                    // max number of goroutines to download
@@ -48,6 +52,7 @@ type Downloader struct {
 	rc   *rrredis.RedisClient // redis client
 }
 
+// Start downloader
 func (s *Downloader) Start() {
 	// connect redis
 	err, rc := rrredis.GetRedisClient(s.RedisConnStr)
@@ -140,12 +145,12 @@ loop2:
 
 }
 
-// stop downloader
+// Stop downloader
 func (s *Downloader) Stop() {
 	close(s.flag)
 }
 
-// wait all urls in redis queue be downloaded
+// Wait all urls in redis queue be downloaded
 func (s *Downloader) WaitCloser() {
 loop:
 	for {

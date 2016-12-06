@@ -23,10 +23,11 @@ import (
 )
 
 const (
-	TEXT_LEAF = iota
-	HTML_LEAF
+	TEXT_LEAF = iota // content type goquery.Selection.Text()
+	HTML_LEAF        // content type goquery.Selection.Html()
 )
 
+// Spider
 type Spider struct {
 	Rules    []string // goquery rules
 	IndexUrl string   // first page that spider would deal with
@@ -35,6 +36,7 @@ type Spider struct {
 	mu sync.Mutex
 }
 
+// Start spider
 func (s *Spider) Run() ([]string, error) {
 	if s.IndexUrl == "" || len(s.Rules) < 1 {
 		return nil, fmt.Errorf("IndexUrl empty or Rules empty")

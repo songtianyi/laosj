@@ -18,6 +18,8 @@ import (
 	"strconv"
 )
 
+// Find max int value from a slice of string
+// ["1","24"] --> 24
 func FindMaxFromSliceString(min int, sofs []string) int {
 	max := min
 	for _, v := range sofs {

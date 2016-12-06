@@ -19,10 +19,12 @@ import (
 	"os"
 )
 
+// Wrapper for local disk storage
 type LocalDiskStorage struct {
 	Dir string // the directory where to save binary
 }
 
+// Create a LocalDiskStorage instance
 func NewLocalDiskStorage(dir string) StorageWrapper {
 	s := &LocalDiskStorage{
 		Dir: dir,
@@ -30,6 +32,7 @@ func NewLocalDiskStorage(dir string) StorageWrapper {
 	return s
 }
 
+// Do save binary
 func (s *LocalDiskStorage) Save(data []byte) (error, string) {
 	// random name
 	filename := rrutils.NewV4().String()
