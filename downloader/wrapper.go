@@ -138,6 +138,9 @@ loop:
 				continue
 			}
 			if v, err := s.rc.LLen(s.SourceQueue); err != nil || v != 0 {
+				if err != nil {
+					logs.Error(err)
+				}
 				continue
 			}
 			break loop
@@ -202,7 +205,7 @@ loop:
 			logs.Error(err)
 			// TODO reconnect to redis
 			// wait recovery
-			time.Sleep(300 * time.Second)
+			time.Sleep(10 * time.Second)
 			// continue the loop
 			continue
 		}
