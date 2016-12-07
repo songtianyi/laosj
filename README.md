@@ -15,6 +15,8 @@
     go get -u -v github.com/songtianyi/laosj
 ######安装redis
 	略
+######依赖
+	请参照.travis.yml
 ######编译并运行样例
 	go build mzituzp.go
 	./mzituzp
