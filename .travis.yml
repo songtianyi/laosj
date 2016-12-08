@@ -19,7 +19,7 @@ script:
 
 deploy:
   provider: releases
-  api_key: "0f0c5fa3dfd97ee78f1e704f9614ba32320d2163"
+  api_key: "dca88040497c2367dc3c859f7e5bea92264527a7"
   file:
     - "mzitu"
     - "mzituzp"
