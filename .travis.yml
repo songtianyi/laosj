@@ -21,8 +21,8 @@ deploy:
   provider: releases
   api_key: "0f0c5fa3dfd97ee78f1e704f9614ba32320d2163"
   file:
-    - mzitu
-    - mzituzp
+    - "mzitu"
+    - "mzituzp"
   skip_cleanup: true
   on:
     tags: true
