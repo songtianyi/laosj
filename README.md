@@ -12,6 +12,7 @@
 
 ##快速上手
 ######下载
+	# 需要爬墙
     go get -u -v github.com/songtianyi/laosj
 ######安装redis
 	略
