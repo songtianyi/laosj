@@ -17,7 +17,7 @@ package main
 import (
 	"github.com/songtianyi/laosj/downloader"
 	"github.com/songtianyi/laosj/spider"
-	"github.com/songtianyi/laosj/storage"
+	"github.com/songtianyi/rrframework/storage"
 	"github.com/songtianyi/rrframework/connector/redis"
 	"github.com/songtianyi/rrframework/logs"
 	"regexp"
@@ -31,7 +31,7 @@ func main() {
 		UrlChannelFactor: 10,
 		RedisConnStr:     "127.0.0.1:6379",
 		SourceQueue:      "DATA:IMAGE:MZITU:XINGGAN",
-		Store:            storage.NewLocalDiskStorage("/data/sexx/mzituzp/"),
+		Store:            rrstorage.CreateLocalDiskStorage("/data/sexx/mzituzp/"),
 	}
 	go func() {
 		d.Start()

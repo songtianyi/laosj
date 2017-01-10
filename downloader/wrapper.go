@@ -16,12 +16,13 @@ package downloader
 
 import (
 	"fmt"
-	"github.com/songtianyi/laosj/storage"
+	"github.com/songtianyi/rrframework/storage"
 	"github.com/songtianyi/rrframework/connector/redis"
 	"github.com/songtianyi/rrframework/logs"
 	"io/ioutil"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -42,7 +43,7 @@ type Downloader struct {
 	ConcurrencyLimit int                    // max number of goroutines to download
 	RedisConnStr     string                 // redis connection string
 	SourceQueue      string                 // url queue
-	Store            storage.StorageWrapper // for saving downloaded binary
+	Store            rrstorage.StorageWrapper // for saving downloaded binary
 	UrlChannelFactor int
 
 	// inner use
@@ -184,8 +185,13 @@ func (s *Downloader) download(url string) error {
 		return err
 	}
 
+	urlv := strings.Split(url, "/")
+	if len(urlv) < 1 {
+		return fmt.Errorf("invalid url %s", url)
+	}
+	filename := urlv[len(urlv)-1]
 	// save binary to storage
-	if err, _ := s.Store.Save(b); err != nil {
+	if err := s.Store.Save(b, filename); err != nil {
 		return err
 	}
 	return nil
