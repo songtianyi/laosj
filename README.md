@@ -16,12 +16,15 @@
 
 ## 代码上手
 ######下载
-	# 需要爬墙
     go get -u -v github.com/songtianyi/laosj
 ######安装redis
 	略
-######依赖
-	请参照.travis.yml
+######golang.org/x依赖安装
+```
+mkdir $GOPATH/src/golang.org/x
+cd $GOPATH/src/golang.org/x
+git clone https://github.com/golang/net.git
+```
 ######编译并运行样例
 	go build mzituzp.go
 	./mzituzp
