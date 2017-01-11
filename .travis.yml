@@ -21,6 +21,7 @@ install:
 script:
     - go install mzitu.go
     - go install mzituzp.go
+    - go install jav.go
 
 deploy:
   provider: releases
