@@ -8,12 +8,12 @@
 [![logo](https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTaiDDQDv9P90h7lu9jARb1O8i6hmVMpgEuK9qY57l0CZjRVue2)](https://github.com/songtianyi/laosj)
 
 
-基于goquery的轻量级图片爬虫, 支持分布式, 可以自定义并发量. 目前图片存储方式只支持本地, 陆续添加中.
+基于goquery的轻量级爬虫, 图片下载器支持分布式, 可以自定义下载并发量。
 
 ## Releases
 * mzitu 爬取mzitu.com/taiwan
 * mzituzp 爬取mzitu.com/share
-
+* jav 获取番号列表及根据番号获取种子文件
 ## 代码上手
 ######下载
     go get -u -v github.com/songtianyi/laosj
