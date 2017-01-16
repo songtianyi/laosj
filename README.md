@@ -11,9 +11,9 @@
 基于goquery的轻量级爬虫, 图片下载器支持分布式, 可以自定义下载并发量。
 
 ## Releases
-* mzitu 爬取mzitu.com/taiwan
-* mzituzp 爬取mzitu.com/share
-* jav 获取番号列表及根据番号获取种子文件
+* mzitu 爬取mzitu.com/taiwan (图片下载依赖redis作为url队列)
+* mzituzp 爬取mzitu.com/share (图片下载依赖redis作为url队列)
+* jav 获取番号列表及根据番号获取种子文件 (无依赖)
 
 ## 代码上手
 ######下载
