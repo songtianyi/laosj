@@ -50,29 +50,16 @@ func parseStar(item string, artist string) {
 	}
 	url := m[1]
 	jvname := strings.Split(url, "=")[1]
-	s := &spider.Spider{
-		IndexUrl: JAV_PREFIX + url + "&mode=2",
-		Rules: []string{
-			"div.videothumblist>div.videos>div.video>a>div.id",
-		},
-		LeafType: spider.TEXT_LEAF,
-	}
-	arts, err := s.Run()
+	s, err := spider.CreateSpiderFromUrl(JAV_PREFIX + url + "&mode=2")
 	if err != nil {
 		logs.Error(err)
 		return
 	}
-
-	s.Rules = []string{"div.videothumblist>div.videos>div.video>a"}
-	s.LeafType = spider.HTML_LEAF
-	artsrcs, err := s.Run()
-	if err != nil {
-		logs.Error(err)
-		return
-	}
+	arts, _ := s.GetText("div.videothumblist>div.videos>div.video>a>div.id")
+	artsrcs, _ := s.GetHtml("div.videothumblist>div.videos>div.video>a")
 
 	if len(artsrcs) != len(arts) {
-		logs.Error(s.IndexUrl, len(artsrcs), len(arts))
+		logs.Error(s.Url, len(artsrcs), len(arts))
 		logs.Debug(artsrcs)
 		logs.Debug(arts)
 		panic(fmt.Errorf(""))
@@ -99,18 +86,12 @@ func runList() {
 	// for every prefix=?
 	for i := 0; i < 26; i++ {
 		// get page num
-		s := &spider.Spider{
-			IndexUrl: "http://www.javlibrary.com/cn/star_list.php?prefix=" + string(rune(i+65)),
-			Rules: []string{
-				"div.page_selector>a.page",
-			},
-			LeafType: spider.TEXT_LEAF,
-		}
-		rs, err := s.Run()
+		s, err := spider.CreateSpiderFromUrl(JAV_PREFIX + "star_list.php?prefix=" + string(rune(i+65)))
 		if err != nil {
 			logs.Error(err)
-			return
+			continue
 		}
+		rs, _ := s.GetText("div.page_selector>a.page")
 		max := spider.FindMaxFromSliceString(0, rs)
 		// for every page
 		var wg sync.WaitGroup
@@ -119,25 +100,13 @@ func runList() {
 			wg.Add(1)
 			go func(k int) {
 				defer wg.Done()
-				s1 := &spider.Spider{
-					IndexUrl: s.IndexUrl + "&page=" + string(rune(k)),
-					Rules: []string{
-						"div.searchitem",
-					},
-					LeafType: spider.HTML_LEAF,
-				}
-				rs1, err := s1.Run()
+				s1, err := spider.CreateSpiderFromUrl(s.Url + "&page=" + string(rune(k)))
 				if err != nil {
 					logs.Error(err)
 					return
 				}
-				s1.Rules = []string{"div.searchitem>a"}
-				s1.LeafType = spider.TEXT_LEAF
-				rs2, err := s1.Run()
-				if err != nil {
-					logs.Error(err)
-					return
-				}
+				rs1, _ := s1.GetHtml("div.searchitem")
+				rs2, _ := s1.GetText("div.searchitem>a")
 				if len(rs1) != len(rs2) {
 					logs.Error("assert fail")
 					return

@@ -38,18 +38,12 @@ func main() {
 	}()
 
 	// step1: find total pages
-	s := &spider.Spider{
-		IndexUrl: "http://www.mzitu.com/share",
-		Rules: []string{
-			"div.main>div.main-content>div.postlist>div>div.pagenavi-cm>a",
-		},
-		LeafType: spider.TEXT_LEAF,
-	}
-	rs, err := s.Run()
+	s, err := spider.CreateSpiderFromUrl("http://www.mzitu.com/share")
 	if err != nil {
 		logs.Error(err)
 		return
 	}
+	rs, _ := s.GetText("div.main>div.main-content>div.postlist>div>div.pagenavi-cm>a")
 	max := spider.FindMaxFromSliceString(1, rs)
 
 	// step2: for every page, find all img tags
@@ -60,18 +54,12 @@ func main() {
 		wg.Add(1)
 		go func(ix int) {
 			defer wg.Done()
-			ns := &spider.Spider{
-				IndexUrl: s.IndexUrl + "/comment-page-" + strconv.Itoa(ix) + "#comments/",
-				Rules: []string{
-					"div.main>div.main-content>div.postlist>div>ul>li>div>p",
-				},
-				LeafType: spider.HTML_LEAF,
-			}
-			t, err := ns.Run()
+			ns, err := spider.CreateSpiderFromUrl(s.Url + "/comment-page-" + strconv.Itoa(ix) + "#comments/")
 			if err != nil {
 				logs.Error(err)
 				return
 			}
+			t, _ := ns.GetHtml("div.main>div.main-content>div.postlist>div>ul>li>div>p")
 			mu.Lock()
 			step2 = append(step2, t...)
 			mu.Unlock()

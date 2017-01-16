@@ -17,80 +17,60 @@ package spider
 import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
-	"github.com/songtianyi/rrframework/logs"
-	"regexp"
 	"sync"
-)
-
-const (
-	TEXT_LEAF = iota // content type goquery.Selection.Text()
-	HTML_LEAF        // content type goquery.Selection.Html()
 )
 
 // Spider
 type Spider struct {
-	Rules    []string // goquery rules
-	IndexUrl string   // first page that spider would deal with
-	LeafType int      // return Text() or Html()
-
-	mu sync.Mutex
+	Url string   // page that spider would deal with
+	doc *goquery.Document
 }
 
 // Start spider
-func (s *Spider) Run() ([]string, error) {
-	if s.IndexUrl == "" || len(s.Rules) < 1 {
-		return nil, fmt.Errorf("IndexUrl empty or Rules empty")
-	}
-	// start from level 0
-	return s.do(s.IndexUrl, 0)
-}
-
-func (s *Spider) do(url string, level int) ([]string, error) {
-	var (
-		res = make([]string, 0) //for leaf
-		err error
-		wg  sync.WaitGroup
-	)
+func CreateSpiderFromUrl(url string) (*Spider, error) {
 	doc, err := goquery.NewDocument(url)
 	if err != nil {
-		return nil, fmt.Errorf("url %s, level %d, error %s", url, level, err)
+		return nil, fmt.Errorf("url %s, error %s", url, err)
 	}
+	return &Spider{Url: url, doc: doc}, nil
+}
 
-	doc.Find(s.Rules[level]).Each(func(ix int, sl *goquery.Selection) {
+func (s *Spider) GetHtml(rule string) ([]string, error) {
+	var (
+		res = make([]string, 0) //for leaf
+		wg  sync.WaitGroup
+		mu sync.Mutex
+	)
+
+	s.doc.Find(rule).Each(func(ix int, sl *goquery.Selection) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if len(s.Rules) > level+1 {
-				// there a deeper level page
-				// find herf url
-				content, _ := sl.Html()
-				m := regexp.MustCompile("href=\"(\\S+)\"").FindStringSubmatch(content)
-				if len(m) < 2 {
-					logs.Error("Find href error, %s", "len(m) < 2")
-					return
-				}
-				href := m[1]
-				t, err := s.do(href, level+1)
-				if err != nil {
-					logs.Error(err)
-					return
-				}
-				s.mu.Lock()
-				res = append(res, t...)
-				s.mu.Unlock()
+			content, _ := sl.Html()
+			mu.Lock()
+			res = append(res, content)
+			mu.Unlock()
 
-			} else {
-				// last
-				// text or html
-				s.mu.Lock()
-				if s.LeafType == TEXT_LEAF {
-					res = append(res, sl.Text())
-				} else if s.LeafType == HTML_LEAF {
-					content, _ := sl.Html()
-					res = append(res, content)
-				}
-				s.mu.Unlock()
-			}
+		}()
+	})
+	wg.Wait()
+	return res, nil
+}
+
+func  (s *Spider) GetText(rule string)([]string, error) {
+	var (
+		res = make([]string, 0) //for leaf
+		wg  sync.WaitGroup
+		mu sync.Mutex
+	)
+
+	s.doc.Find(rule).Each(func(ix int, sl *goquery.Selection) {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+				mu.Lock()
+				res = append(res, sl.Text())
+				mu.Unlock()
 		}()
 	})
 	wg.Wait()

@@ -38,18 +38,12 @@ func main() {
 	}()
 
 	// step1: find total index pages
-	s := &spider.Spider{
-		IndexUrl: "http://www.mzitu.com/taiwan",
-		Rules: []string{
-			"div.main>div.main-content>div.postlist>nav.navigation.pagination>div.nav-links>a.page-numbers",
-		},
-		LeafType: spider.TEXT_LEAF,
-	}
-	rs, err := s.Run()
+	s, err := spider.CreateSpiderFromUrl("http://www.mzitu.com/taiwan")
 	if err != nil {
 		logs.Error(err)
 		return
 	}
+	rs, _ := s.GetText("div.main>div.main-content>div.postlist>nav.navigation.pagination>div.nav-links>a.page-numbers")
 	max := spider.FindMaxFromSliceString(1, rs)
 
 	// step2: for every index page, find every post entrance
@@ -60,18 +54,12 @@ func main() {
 		wg.Add(1)
 		go func(ix int) {
 			defer wg.Done()
-			ns := &spider.Spider{
-				IndexUrl: s.IndexUrl + "/page/" + strconv.Itoa(ix),
-				Rules: []string{
-					"div.main>div.main-content>div.postlist>ul>li",
-				},
-				LeafType: spider.HTML_LEAF,
-			}
-			t, err := ns.Run()
+			ns, err := spider.CreateSpiderFromUrl(s.Url + "/page/" + strconv.Itoa(ix))
 			if err != nil {
 				logs.Error(err)
 				return
 			}
+			t, _ := ns.GetHtml("div.main>div.main-content>div.postlist>ul>li")
 			mu.Lock()
 			step2 = append(step2, t...)
 			mu.Unlock()
@@ -81,41 +69,32 @@ func main() {
 	// parse url
 	for i, v := range step2 {
 		re := regexp.MustCompile("href=\"(\\S+)\"")
-		url := re.FindStringSubmatch(v)[1]
-		step2[i] = url
+		m := re.FindStringSubmatch(v)
+		if len(m) < 2 {
+			continue
+		}
+		step2[i] = m[1]
 	}
 
 	for _, v := range step2 {
 		// step3: step in entrance, find max pagenum
-		ns1 := &spider.Spider{
-			IndexUrl: v,
-			Rules: []string{
-				"div.main>div.content>div.pagenavi>a",
-			},
-			LeafType: spider.TEXT_LEAF,
-		}
-		t1, err := ns1.Run()
+		ns1, err := spider.CreateSpiderFromUrl(v)
 		if err != nil {
 			logs.Error(err)
 			return
 		}
+		t1, _ := ns1.GetText("div.main>div.content>div.pagenavi>a")
 		maxx := spider.FindMaxFromSliceString(1, t1)
 		// step4: for every page
 		for j := 1; j <= maxx; j++ {
 
 			// step5: find img in this page
-			ns2 := &spider.Spider{
-				IndexUrl: v + "/" + strconv.Itoa(j),
-				Rules: []string{
-					"div.main>div.content>div.main-image>p>a",
-				},
-				LeafType: spider.HTML_LEAF,
-			}
-			t2, err := ns2.Run()
+			ns2, err := spider.CreateSpiderFromUrl(v + "/" + strconv.Itoa(j))
 			if err != nil {
 				logs.Error(err)
 				return
 			}
+			t2, err := ns2.GetHtml("div.main>div.content>div.main-image>p>a")
 			if len(t2) < 1 {
 				// ignore this page
 				continue
@@ -125,6 +104,7 @@ func main() {
 				// ignore this page
 				continue
 			}
+			logs.Debug(sub[1])
 			err, rc := rrredis.GetRedisClient(d.RedisConnStr)
 			if err != nil {
 				logs.Error(err)
