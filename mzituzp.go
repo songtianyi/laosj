@@ -17,9 +17,9 @@ package main
 import (
 	"github.com/songtianyi/laosj/downloader"
 	"github.com/songtianyi/laosj/spider"
-	"github.com/songtianyi/rrframework/storage"
 	"github.com/songtianyi/rrframework/connector/redis"
 	"github.com/songtianyi/rrframework/logs"
+	"github.com/songtianyi/rrframework/storage"
 	"regexp"
 	"strconv"
 	"sync"
