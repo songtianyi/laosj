@@ -104,7 +104,6 @@ func main() {
 				// ignore this page
 				continue
 			}
-			logs.Debug(sub[1])
 			err, rc := rrredis.GetRedisClient(d.RedisConnStr)
 			if err != nil {
 				logs.Error(err)
