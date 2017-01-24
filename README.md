@@ -13,6 +13,7 @@
 ## Releases
 * mzitu 爬取mzitu.com/taiwan (图片下载依赖redis作为url队列)
 * mzituzp 爬取mzitu.com/share (图片下载依赖redis作为url队列)
+* aiss-darwin 根据接口下载爱丝图片(依赖redis作为url队列)
 * jav 获取番号列表及根据番号获取种子文件 (无依赖)
 
 ## 代码上手
