@@ -15,16 +15,17 @@
 package main
 
 import (
-	"os"
-	"strconv"
-	"strings"
-	"github.com/songtianyi/laosj/downloader"
 	"fmt"
+	"github.com/songtianyi/laosj/downloader"
 	"github.com/songtianyi/rrframework/config"
+	"github.com/songtianyi/rrframework/connector/redis"
 	"github.com/songtianyi/rrframework/storage"
 	"io/ioutil"
 	"net/http"
-	"github.com/songtianyi/rrframework/connector/redis"
+	"os"
+	"strconv"
+	"strings"
+	"sync"
 )
 
 type ReqBody struct {
@@ -102,17 +103,23 @@ func main() {
 			page += 1
 		}
 	}
-	for k, _ := range km {
-		_ = os.MkdirAll("/data/sexx/pmkoo/" + k, os.ModeDir)
-		d := &downloader.Downloader{
-			ConcurrencyLimit: 10,
-			UrlChannelFactor: 10,
-			RedisConnStr:     "127.0.0.1:6379",
-			SourceQueue:      k,
-			Store:            rrstorage.CreateLocalDiskStorage("/data/sexx/pmkoo/" + k),
-		}
-		go d.Start()
-		d.WaitCloser()
+	var wg sync.WaitGroup
+	for k := range km {
+		wg.Add(1)
+		go func(k string) {
+			defer wg.Done()
+			_ = os.MkdirAll("/data/sexx/pmkoo/"+k, os.ModeDir)
+			d := &downloader.Downloader{
+				ConcurrencyLimit: 2,
+				UrlChannelFactor: 10,
+				RedisConnStr:     "127.0.0.1:6379",
+				SourceQueue:      k,
+				Store:            rrstorage.CreateLocalDiskStorage("/data/sexx/pmkoo/" + k),
+			}
+			go d.Start()
+			d.WaitCloser()
+		}(k)
 	}
+	wg.Wait()
 
 }
