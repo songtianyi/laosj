@@ -55,7 +55,7 @@ func getSuiteList(page int) ([]byte, error) {
 func main() {
 	//
 	oss := "http://com-pmkoo-img.oss-cn-beijing.aliyuncs.com/picture/"
-	sema := make(chan struct{}, 1)
+	sema := make(chan struct{}, 10)
 	page := 1
 	ok := true
 
@@ -110,7 +110,7 @@ func main() {
 			defer wg.Done()
 			_ = os.MkdirAll("/data/sexx/pmkoo/"+k, os.ModeDir)
 			d := &downloader.Downloader{
-				ConcurrencyLimit: 2,
+				ConcurrencyLimit: 10,
 				UrlChannelFactor: 10,
 				RedisConnStr:     "127.0.0.1:6379",
 				SourceQueue:      k,
