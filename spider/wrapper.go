@@ -76,3 +76,29 @@ func  (s *Spider) GetText(rule string)([]string, error) {
 	wg.Wait()
 	return res, nil
 }
+
+
+func  (s *Spider) GetAttr(rule, attr string)([]string, error) {
+	var (
+		res = make([]string, 0) //for leaf
+		wg  sync.WaitGroup
+		mu sync.Mutex
+	)
+
+	s.doc.Find(rule).Each(func(ix int, sl *goquery.Selection) {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+				attr, ok := sl.Attr(attr)
+				if ok {
+					mu.Lock()
+					res = append(res, attr)
+					mu.Unlock()
+				}
+		}()
+	})
+	wg.Wait()
+	return res, nil
+}
+
+

@@ -28,6 +28,10 @@ import (
 	"sync"
 )
 
+var (
+	kmlock sync.Mutex
+)
+
 type ReqBody struct {
 	page   int
 	userId int
@@ -93,7 +97,9 @@ func main() {
 						uri += strconv.FormatInt(int64(issue), 10) + "/"
 						uri += strconv.FormatInt(int64(j), 10) + ".jpg"
 						key := "DATA:IMAGE:" + catlog + ":" + strconv.FormatInt(int64(issue), 10)
+						kmlock.Lock()
 						km[key] = true
+						kmlock.Unlock()
 						if _, err := rc.RPush(key, uri); err != nil {
 							fmt.Println(err)
 						}
