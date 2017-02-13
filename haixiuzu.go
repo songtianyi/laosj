@@ -15,18 +15,55 @@
 package main
 
 import (
-	"fmt"
-	//"github.com/songtianyi/laosj/downloader"
+	"github.com/songtianyi/laosj/downloader"
 	"github.com/songtianyi/laosj/spider"
 	//"github.com/songtianyi/rrframework/config"
-	//"github.com/songtianyi/rrframework/connector/redis"
+	"github.com/songtianyi/rrframework/storage"
+	"github.com/songtianyi/rrframework/logs"
+	"github.com/songtianyi/rrframework/connector/redis"
 )
 
 func main() {
-	s, err := spider.CreateSpiderFromUrl("http://www.douban.com/group/haixiuzu/discussion")
-	if err != nil {
-		fmt.Println(err)
+	url := "http://www.douban.com/group/haixiuzu/discussion"
+	d := &downloader.Downloader{
+		ConcurrencyLimit: 10,
+		UrlChannelFactor: 10,
+		RedisConnStr: "10.19.147.75:6379",
+		SourceQueue: "DATA:IMAGE:HAIXIUZU",
+		Store: rrstorage.CreateLocalDiskStorage("/data/sexx/haixiuzu/"),
 	}
-	rs, _ := s.GetAttr("div.grid-16-8.clearfix>div.article>div>table.olt>tbody>tr>td.title>a", "href")
-	fmt.Println(rs)
+	err, rc := rrredis.GetRedisClient("10.19.147.75:6379")
+	if err != nil {
+		panic(err)
+	}
+	go func() {
+		d.Start()
+	}()
+
+	for {
+		s, err := spider.CreateSpiderFromUrl(url)
+		if err != nil {
+			logs.Debug(err)
+			continue
+		}
+		rs, _ := s.GetAttr("div.grid-16-8.clearfix>div.article>div>table.olt>tbody>tr>td.title>a", "href")
+		for _, v := range rs {
+			s01, err := spider.CreateSpiderFromUrl(v)
+			if err != nil {
+				logs.Error(err)
+				continue
+			}
+			rs01, _ := s01.GetAttr("div.grid-16-8.clearfix>div.article>div.topic-content.clearfix>div.topic-doc>div#link-report>div.topic-content>div.topic-figure.cc>img", "src")
+			for _, vv := range rs01 {
+				if _, err := rc.RPush("DATA:IMAGE:HAIXIUZU", vv); err != nil {
+					logs.Error(err)
+				}
+			}
+		}
+		rs1, _ := s.GetAttr("div.grid-16-8.clearfix>div.article>div.paginator>span.next>a", "href")
+		if len(rs1) != 1 {
+			break
+		}
+		url = rs1[0]
+	}
 }
