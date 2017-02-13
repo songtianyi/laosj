@@ -34,13 +34,13 @@ var (
 func main() {
 	url := "http://www.douban.com/group/haixiuzu/discussion"
 	d := &downloader.Downloader{
-		ConcurrencyLimit: 10,
+		ConcurrencyLimit: 3,
 		UrlChannelFactor: 10,
-		RedisConnStr: "10.19.147.75:6379",
+		RedisConnStr: "127.0.0.1:6379",
 		SourceQueue: "DATA:IMAGE:HAIXIUZU",
-		Store: rrstorage.CreateLocalDiskStorage("/data/sexx/haixiuzu/"),
+		Store: rrstorage.CreateLocalDiskStorage("./sexx/haixiuzu/"),
 	}
-	err, rc := rrredis.GetRedisClient("10.19.147.75:6379")
+	err, rc := rrredis.GetRedisClient("127.0.0.1:6379")
 	if err != nil {
 		panic(err)
 	}
@@ -110,5 +110,6 @@ func main() {
 		}
 		url = rs1[0]
 		logs.Notice("redirect to", url)
+		time.Sleep(5 * time.Second)
 	}
 }
