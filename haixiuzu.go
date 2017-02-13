@@ -16,17 +16,19 @@ package main
 
 import (
 	//"net/http/cookiejar"
-	"net/http"
 	"github.com/songtianyi/laosj/downloader"
 	"github.com/songtianyi/laosj/spider"
-	"github.com/songtianyi/rrframework/storage"
-	"github.com/songtianyi/rrframework/logs"
 	"github.com/songtianyi/rrframework/connector/redis"
+	"github.com/songtianyi/rrframework/logs"
+	"github.com/songtianyi/rrframework/storage"
+	"net/http"
 	"time"
 )
+
 const (
 	UserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36"
 )
+
 var (
 	Cookies []*http.Cookie
 )
@@ -36,9 +38,9 @@ func main() {
 	d := &downloader.Downloader{
 		ConcurrencyLimit: 3,
 		UrlChannelFactor: 10,
-		RedisConnStr: "127.0.0.1:6379",
-		SourceQueue: "DATA:IMAGE:HAIXIUZU",
-		Store: rrstorage.CreateLocalDiskStorage("./sexx/haixiuzu/"),
+		RedisConnStr:     "127.0.0.1:6379",
+		SourceQueue:      "DATA:IMAGE:HAIXIUZU",
+		Store:            rrstorage.CreateLocalDiskStorage("./sexx/haixiuzu/"),
 	}
 	err, rc := rrredis.GetRedisClient("127.0.0.1:6379")
 	if err != nil {
