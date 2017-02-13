@@ -15,12 +15,20 @@
 package main
 
 import (
+	//"net/http/cookiejar"
+	"net/http"
 	"github.com/songtianyi/laosj/downloader"
 	"github.com/songtianyi/laosj/spider"
-	//"github.com/songtianyi/rrframework/config"
 	"github.com/songtianyi/rrframework/storage"
 	"github.com/songtianyi/rrframework/logs"
 	"github.com/songtianyi/rrframework/connector/redis"
+	"time"
+)
+const (
+	UserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36"
+)
+var (
+	Cookies []*http.Cookie
 )
 
 func main() {
@@ -39,16 +47,51 @@ func main() {
 	go func() {
 		d.Start()
 	}()
+	refer := ""
 
 	for {
-		s, err := spider.CreateSpiderFromUrl(url)
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			logs.Error(err)
+			break
+		}
+		req.Header.Add("User-Agent", UserAgent)
+		req.Header.Add("Referer", refer)
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			logs.Error(err)
+			break
+		}
+		if resp.StatusCode != 200 {
+			logs.Debug(resp)
+			break
+		}
+		if Cookies == nil {
+			Cookies = resp.Cookies()
+		}
+		s, err := spider.CreateSpiderFromResponse(resp)
 		if err != nil {
 			logs.Debug(err)
-			continue
+			break
 		}
 		rs, _ := s.GetAttr("div.grid-16-8.clearfix>div.article>div>table.olt>tbody>tr>td.title>a", "href")
+		refer = url
 		for _, v := range rs {
-			s01, err := spider.CreateSpiderFromUrl(v)
+			req01, _ := http.NewRequest("GET", v, nil)
+			req01.Header.Add("User-Agent", UserAgent)
+			req01.Header.Add("Referer", refer)
+			resp01, err := client.Do(req01)
+			if err != nil {
+				logs.Error(err)
+				continue
+			}
+			if resp01.StatusCode != 200 {
+				logs.Debug(resp01)
+				continue
+			}
+			s01, err := spider.CreateSpiderFromResponse(resp01)
 			if err != nil {
 				logs.Error(err)
 				continue
@@ -59,11 +102,13 @@ func main() {
 					logs.Error(err)
 				}
 			}
+			time.Sleep(5 * time.Second)
 		}
 		rs1, _ := s.GetAttr("div.grid-16-8.clearfix>div.article>div.paginator>span.next>a", "href")
 		if len(rs1) != 1 {
 			break
 		}
 		url = rs1[0]
+		logs.Notice("redirect to", url)
 	}
 }
