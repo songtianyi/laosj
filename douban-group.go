@@ -112,4 +112,5 @@ func main() {
 		logs.Notice("redirect to", url)
 		time.Sleep(5 * time.Second)
 	}
+	d.WaitCloser()
 }
