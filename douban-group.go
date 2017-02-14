@@ -15,7 +15,6 @@
 package main
 
 import (
-	//"net/http/cookiejar"
 	"github.com/songtianyi/laosj/downloader"
 	"github.com/songtianyi/laosj/spider"
 	"github.com/songtianyi/rrframework/connector/redis"
@@ -23,6 +22,7 @@ import (
 	"github.com/songtianyi/rrframework/storage"
 	"net/http"
 	"time"
+	"flag"
 )
 
 const (
@@ -30,11 +30,12 @@ const (
 )
 
 var (
-	Cookies []*http.Cookie
+	startPage = flag.String("s", "http://www.douban.com/group/haixiuzu/discussion", "douban group start page")
 )
 
 func main() {
-	url := "http://www.douban.com/group/haixiuzu/discussion"
+	flag.Parse()
+	url := *startPage
 	d := &downloader.Downloader{
 		ConcurrencyLimit: 3,
 		UrlChannelFactor: 10,
@@ -69,9 +70,6 @@ func main() {
 		if resp.StatusCode != 200 {
 			logs.Debug(resp)
 			break
-		}
-		if Cookies == nil {
-			Cookies = resp.Cookies()
 		}
 		s, err := spider.CreateSpiderFromResponse(resp)
 		if err != nil {
