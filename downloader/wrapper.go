@@ -16,9 +16,9 @@ package downloader
 
 import (
 	"fmt"
-	"github.com/songtianyi/rrframework/storage"
 	"github.com/songtianyi/rrframework/connector/redis"
 	"github.com/songtianyi/rrframework/logs"
+	"github.com/songtianyi/rrframework/storage"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -40,9 +40,9 @@ type Url struct {
 // then save downloaded binary to storage
 type Downloader struct {
 	// exported
-	ConcurrencyLimit int                    // max number of goroutines to download
-	RedisConnStr     string                 // redis connection string
-	SourceQueue      string                 // url queue
+	ConcurrencyLimit int                      // max number of goroutines to download
+	RedisConnStr     string                   // redis connection string
+	SourceQueue      string                   // url queue
 	Store            rrstorage.StorageWrapper // for saving downloaded binary
 	UrlChannelFactor int
 

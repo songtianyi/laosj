@@ -15,6 +15,7 @@
 package main
 
 import (
+	"flag"
 	"github.com/songtianyi/laosj/downloader"
 	"github.com/songtianyi/laosj/spider"
 	"github.com/songtianyi/rrframework/connector/redis"
@@ -22,7 +23,6 @@ import (
 	"github.com/songtianyi/rrframework/storage"
 	"net/http"
 	"time"
-	"flag"
 )
 
 const (

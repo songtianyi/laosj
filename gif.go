@@ -16,9 +16,9 @@ package main
 
 import (
 	//"github.com/songtianyi/laosj/downloader"
+	"flag"
 	"github.com/songtianyi/laosj/spider"
 	"github.com/songtianyi/rrframework/logs"
-	"flag"
 	"net/url"
 )
 

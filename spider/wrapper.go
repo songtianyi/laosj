@@ -17,13 +17,13 @@ package spider
 import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
-	"sync"
 	"net/http"
+	"sync"
 )
 
 // Spider
 type Spider struct {
-	Url string   // page that spider would deal with
+	Url string // page that spider would deal with
 	doc *goquery.Document
 }
 
@@ -48,7 +48,7 @@ func (s *Spider) GetHtml(rule string) ([]string, error) {
 	var (
 		res = make([]string, 0) //for leaf
 		wg  sync.WaitGroup
-		mu sync.Mutex
+		mu  sync.Mutex
 	)
 
 	s.doc.Find(rule).Each(func(ix int, sl *goquery.Selection) {
@@ -66,48 +66,45 @@ func (s *Spider) GetHtml(rule string) ([]string, error) {
 	return res, nil
 }
 
-func  (s *Spider) GetText(rule string)([]string, error) {
+func (s *Spider) GetText(rule string) ([]string, error) {
 	var (
 		res = make([]string, 0) //for leaf
 		wg  sync.WaitGroup
-		mu sync.Mutex
+		mu  sync.Mutex
 	)
 
 	s.doc.Find(rule).Each(func(ix int, sl *goquery.Selection) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			mu.Lock()
+			res = append(res, sl.Text())
+			mu.Unlock()
+		}()
+	})
+	wg.Wait()
+	return res, nil
+}
+
+func (s *Spider) GetAttr(rule, attr string) ([]string, error) {
+	var (
+		res = make([]string, 0) //for leaf
+		wg  sync.WaitGroup
+		mu  sync.Mutex
+	)
+
+	s.doc.Find(rule).Each(func(ix int, sl *goquery.Selection) {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			attr, ok := sl.Attr(attr)
+			if ok {
 				mu.Lock()
-				res = append(res, sl.Text())
+				res = append(res, attr)
 				mu.Unlock()
+			}
 		}()
 	})
 	wg.Wait()
 	return res, nil
 }
-
-
-func  (s *Spider) GetAttr(rule, attr string)([]string, error) {
-	var (
-		res = make([]string, 0) //for leaf
-		wg  sync.WaitGroup
-		mu sync.Mutex
-	)
-
-	s.doc.Find(rule).Each(func(ix int, sl *goquery.Selection) {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-				attr, ok := sl.Attr(attr)
-				if ok {
-					mu.Lock()
-					res = append(res, attr)
-					mu.Unlock()
-				}
-		}()
-	})
-	wg.Wait()
-	return res, nil
-}
-
-
