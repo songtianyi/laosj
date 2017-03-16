@@ -18,20 +18,20 @@
 * douban-group 抓取并下载豆瓣小组图片(依赖redis作为url队列)
 
 ## 代码上手
-######下载
+###### 下载
     go get -u -v github.com/songtianyi/laosj
 
-######安装redis
+###### 安装redis
 	略
 
-######golang.org/x依赖安装
+###### golang.org/x依赖安装
 ```
 mkdir $GOPATH/src/golang.org/x
 cd $GOPATH/src/golang.org/x
 git clone https://github.com/golang/net.git
 ```
 
-######编译并运行样例
+###### 编译并运行样例
 	go build mzituzp.go
 	./mzituzp
 
