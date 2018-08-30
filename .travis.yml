@@ -19,16 +19,13 @@ install:
 
 
 script:
-    - go install mzitu.go
-    - go install mzituzp.go
-    - go install jav.go
+    - go install cmds/laosj/laosj.go
 
 deploy:
   provider: releases
   api_key: "dca88040497c2367dc3c859f7e5bea92264527a7"
   file:
-    - "bin/mzitu"
-    - "bin/mzituzp"
+    - "bin/laosj"
   skip_cleanup: true
   on:
     tags: true
