@@ -12,20 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package sources
 
 import (
 	"fmt"
-	"github.com/songtianyi/laosj/downloader"
-	"github.com/songtianyi/rrframework/config"
-	"github.com/songtianyi/rrframework/connector/redis"
-	"github.com/songtianyi/rrframework/storage"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/songtianyi/laosj/downloader"
+	"github.com/songtianyi/rrframework/config"
+	"github.com/songtianyi/rrframework/connector/redis"
+	"github.com/songtianyi/rrframework/storage"
 )
 
 var (
@@ -37,7 +38,19 @@ type ReqBody struct {
 	userId int
 }
 
-func getSuiteList(page int) ([]byte, error) {
+const (
+	DEFAULT_WAITING_QUEUE = downloader.WAITTING_KEY_PREFIX + ":WAITING:AISS"
+)
+
+type Aiss struct {
+	limit uint32 // concurrency limit
+}
+
+func NewAiss(limit int) SourceWrapper {
+	return &Aiss{}
+}
+
+func (s *Aiss) getSuiteList(page int) ([]byte, error) {
 	uri := "http://api.pmkoo.cn/aiss/suite/suiteList.do"
 	para := "page=" + strconv.FormatInt(int64(page), 10) + "&userId=153044"
 	client := &http.Client{}
@@ -56,7 +69,15 @@ func getSuiteList(page int) ([]byte, error) {
 	return body, nil
 }
 
-func main() {
+func (s *Aiss) GetOne() []string {
+	return []string{"a"}
+}
+
+func (s *Aiss) GetAll() []string {
+	return []string{"a", "b"}
+}
+
+func (s *Aiss) do() {
 	//
 	oss := "http://com-pmkoo-img.oss-cn-beijing.aliyuncs.com/picture/"
 	sema := make(chan struct{}, 10)
@@ -73,7 +94,7 @@ func main() {
 		case sema <- struct{}{}:
 			go func(pg int) {
 				defer func() { <-sema }() // release
-				b, err := getSuiteList(pg)
+				b, err := s.getSuiteList(pg)
 				if err != nil {
 					fmt.Println(err)
 					ok = false
@@ -115,7 +136,7 @@ func main() {
 		go func(k string) {
 			defer wg.Done()
 			_ = os.MkdirAll("/data/sexx/pmkoo/"+k, os.ModeDir)
-			d := &downloader.Downloader{
+			d := &downloader.RedisDownloader{
 				ConcurrencyLimit: 10,
 				UrlChannelFactor: 10,
 				RedisConnStr:     "127.0.0.1:6379",
