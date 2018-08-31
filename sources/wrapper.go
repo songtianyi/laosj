@@ -14,3 +14,10 @@ type SourceWrapper interface {
 	Destination() string
 	Name() string
 }
+
+type SourceEOF struct {
+}
+
+func (s *SourceEOF) Error() string {
+	return "EOF"
+}

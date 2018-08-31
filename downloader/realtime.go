@@ -48,7 +48,7 @@ loop2:
 			url, ok := <-s.Urls
 			if !ok {
 				// channel closed
-				logs.Alert("Channel s.Urls closed")
+				logs.Alert("source url channel closed")
 				// TODO what's the right way to deal this situation?
 				break loop2
 			}

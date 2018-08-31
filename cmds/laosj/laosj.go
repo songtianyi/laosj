@@ -1,9 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/songtianyi/rrframework/logs"
@@ -23,6 +23,7 @@ type AppConfig struct {
 	All     bool
 	Mode    int
 	Redis   string
+	Dir     string
 }
 
 var appConfig *AppConfig
@@ -34,7 +35,7 @@ func startRealTimeDownloader(source sources.SourceWrapper) {
 	d := &downloader.RealtimeDownloader{
 		ConcurrencyLimit: appConfig.DClimit,
 		UrlChannelFactor: 10,
-		Store:            rrstorage.CreateLocalDiskStorage("/data/sexx/" + source.Name()),
+		Store:            rrstorage.CreateLocalDiskStorage(strings.TrimSuffix(appConfig.Dir, "/") + "/" + source.Name() + "/"),
 		Urls:             source.Receiver(),
 	}
 	d.Start()
@@ -73,10 +74,23 @@ func dealTestOrNot(source sources.SourceWrapper) sources.SourceWrapper {
 	return source
 }
 func aissHandler(c *cli.Context) error {
-	fmt.Println(appConfig)
-	aissSource := sources.NewAiss("aiss", c.String("dq"), appConfig.CClimit)
+	aissSource := sources.NewAiss(c.String("sub"), c.String("dq"), appConfig.CClimit)
 	aissSource.SetReceiver(make(chan downloader.Url, 100))
 	return dealMode(dealTestOrNot(aissSource))
+}
+
+func doubanAlbumHandler(c *cli.Context) error {
+	doubanAlbumSource := sources.NewDoubanAlbum(
+		c.String("sub"),
+		c.String("id"),
+		c.Int("ps"),
+		c.Int("sp"),
+		c.Int("lp"),
+		c.String("dq"),
+		appConfig.CClimit)
+	logs.Debug(doubanAlbumSource)
+	doubanAlbumSource.SetReceiver(make(chan downloader.Url, 100))
+	return dealMode(dealTestOrNot(doubanAlbumSource))
 }
 
 func drainHandler(c *cli.Context) error {
@@ -94,7 +108,7 @@ func main() {
 			Email: "songtianyi630@163.com",
 		},
 	}
-	app.Copyright = "(c) 2018 songtianyi"
+	app.Copyright = "Copyright (c) 2016-2018 songtianyi"
 	app.Commands = []cli.Command{
 		{
 			Name:    "aiss",
@@ -103,9 +117,52 @@ func main() {
 			Action:  aissHandler,
 			Flags: []cli.Flag{
 				cli.StringFlag{
+					Name:  "subdirectory, sub",
+					Value: "aiss",
+					Usage: "subdir, storage sub dir counting on it",
+				},
+				cli.StringFlag{
 					Name:  "destination_queue, dq",
 					Value: sources.AISS_DEFAULT_WAITING_QUEUE,
 					Usage: "aiss default destination queue",
+				},
+			},
+		},
+		{
+			Name:    "douban",
+			Aliases: []string{"douban"},
+			Usage:   "crawl douban album images",
+			Action:  doubanAlbumHandler,
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "subdirectory, sub",
+					Value: "douban",
+					Usage: "subdir, storage sub dir counting on it",
+				},
+				cli.IntFlag{
+					Name:  "page_size, ps",
+					Value: 18, // default
+					Usage: "douban album page size",
+				},
+				cli.IntFlag{
+					Name:  "last_page, lp",
+					Value: 254,
+					Usage: "douban album last page number, include itself",
+				},
+				cli.IntFlag{
+					Name:  "start_page, sp",
+					Value: 1, // from first page
+					Usage: "set douban album start page number, include itself",
+				},
+				cli.StringFlag{
+					Name:  "album_id, id",
+					Value: "105181925",
+					Usage: "douban album id",
+				},
+				cli.StringFlag{
+					Name:  "destination_queue, dq",
+					Value: sources.DOUBAN_ALBUM_WAITTING_QUEUE,
+					Usage: "douban album default destination queue",
 				},
 			},
 		},
@@ -126,7 +183,7 @@ func main() {
 	app.Flags = []cli.Flag{
 		cli.IntFlag{
 			Name:        "cclimit, ccl",
-			Value:       10,
+			Value:       1,
 			Usage:       "concurrency limit for crawling, used when getting all images from source site",
 			Destination: &appConfig.CClimit,
 		},
@@ -138,7 +195,7 @@ func main() {
 		},
 		cli.BoolFlag{
 			Name:        "all, a",
-			Usage:       "true for get only on image from source, false for get all images",
+			Usage:       "false for get only on image from source, true for get all images",
 			Destination: &appConfig.All,
 		},
 		cli.IntFlag{
@@ -152,6 +209,12 @@ func main() {
 			Value:       "127.0.0.1:6379",
 			Usage:       "redis ip:port",
 			Destination: &appConfig.Redis,
+		},
+		cli.StringFlag{
+			Name:        "directory, dir",
+			Value:       "/Volumes/songtianyi/sexx",
+			Usage:       "the local disk storage path prefix, no slash in the end",
+			Destination: &appConfig.Dir,
 		},
 	}
 	err := app.Run(os.Args)

@@ -74,6 +74,7 @@ func (s *RedisDownloader) Start() {
 	}()
 
 	tick := time.Tick(2 * time.Second)
+	logs.Info("redis downloader started.")
 
 loop2:
 	for {

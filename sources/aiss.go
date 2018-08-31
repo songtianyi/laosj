@@ -23,6 +23,7 @@ import (
 
 	"github.com/songtianyi/laosj/downloader"
 	"github.com/songtianyi/rrframework/config"
+	"github.com/songtianyi/rrframework/logs"
 )
 
 var (
@@ -30,7 +31,7 @@ var (
 )
 
 const (
-	AISS_DEFAULT_WAITING_QUEUE = downloader.WAITTING_KEY_PREFIX + ":WAITING:AISS"
+	AISS_DEFAULT_WAITING_QUEUE = downloader.WAITTING_KEY_PREFIX + ":AISS"
 )
 
 type ReqBody struct {
@@ -38,17 +39,13 @@ type ReqBody struct {
 	userId int
 }
 
-type SuiteEOF struct {
-}
-
-func (s *SuiteEOF) Error() string {
-	return "EOF"
-}
-
 type Aiss struct {
+	// set when create
 	name string // source name
 	urls chan downloader.Url
 	dq   string // destination queue
+
+	// internal use
 	sema chan struct{}
 	max  int // max images to get every req
 }
@@ -76,7 +73,7 @@ func (s *Aiss) getSuiteList(page int) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	resp.Body.Close()
 	body, _ := ioutil.ReadAll(resp.Body)
 	return body, nil
 }
@@ -92,7 +89,7 @@ func (s *Aiss) doOnce(pg int) error {
 	// fmt.Println(du)
 	ics, err := jc.GetInterfaceSlice("data.list")
 	if err != nil {
-		return &SuiteEOF{}
+		return &SourceEOF{}
 	}
 	for _, v := range ics {
 		vm := v.(map[string]interface{})
@@ -112,7 +109,8 @@ func (s *Aiss) doOnce(pg int) error {
 	return nil
 }
 func (s *Aiss) waitCloser() {
-	tick := time.Tick(2 * time.Second)
+	tick := time.Tick(30 * time.Second)
+	logs.Alert("closing source url channel...")
 loop:
 	for {
 		select {
@@ -126,11 +124,12 @@ loop:
 	}
 }
 func (s *Aiss) GetOne() {
-	s.doOnce(1)
+	s.sema <- struct{}{}
+	s.doOnce(1) // 1-based
 	s.waitCloser()
 }
 func (s *Aiss) GetAll() {
-	page := 1
+	page := 1 // 1-based
 	ok := true
 
 	for ok {
