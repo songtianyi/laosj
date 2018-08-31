@@ -8,36 +8,61 @@
 [![logo](https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTaiDDQDv9P90h7lu9jARb1O8i6hmVMpgEuK9qY57l0CZjRVue2)](https://github.com/songtianyi/laosj)
 
 
-基于goquery的轻量级爬虫, 图片下载器支持分布式, 可以自定义下载并发量。
+基于goquery的轻量级爬虫, 支持分布式爬取和下载。
+### 展示
+![laosj-demo](http://owm6k6w0y.bkt.clouddn.com/laosj-demo.gif)
 
-## Releases
-* mzitu 爬取mzitu.com/taiwan (图片下载依赖redis作为url队列)
-* mzituzp 爬取mzitu.com/share (图片下载依赖redis作为url队列)
-* aiss-darwin 根据接口下载爱丝图片(依赖redis作为url队列)
-* jav 获取番号列表及根据番号获取种子文件 (无依赖)
-* douban-group 抓取并下载豆瓣小组图片(依赖redis作为url队列)
+### CLI
 
-## 代码上手
+```shell
+go install github.com/songtianyi/laosj
+```
+
+### 图片源
+
+* aiss(已不可用)
+
+  ```
+  ./laosj help aiss
+  ./laosj aiss 
+  ```
+
+* douban相册
+
+  ```shell
+  ./laosj help douban
+  ./laosj douban --sp 1
+  ```
+
+* [妹子图](http://meizitu.com/)(待重构)
+
+* [javlibrary](http://www.javlibrary.com/cn/)(待重构)
+> 可以直接下载Release的二进制文件使用
+
+### 代码上手
+
 ###### 下载
-    go get -u -v github.com/songtianyi/laosj
+```shell
+go get -u -v github.com/songtianyi/laosj
+```
 
 ###### 安装redis
-	略
+	略，使用redis作为下载队列需安装
 
 ###### golang.org/x依赖安装
-```
+```shell
 mkdir $GOPATH/src/golang.org/x
 cd $GOPATH/src/golang.org/x
 git clone https://github.com/golang/net.git
 ```
 
-###### 编译并运行样例
-	go build mzituzp.go
-	./mzituzp
+###### 编译并运行
 
-## 截图
+```shell
+cd cmds/laosj/ && go build .
+./laosj douban --sp 1
+```
 
-![laosj](http://i1.piimg.com/4851/a598ac03cd7ae15f.jpg)
+### 微信交流群
 
-## 微信交流群
-<img src="http://owm6k6w0y.bkt.clouddn.com/17-9-21/70665214.jpg" width="480" height="480"/>
+### <img src="http://owm6k6w0y.bkt.clouddn.com/17-9-21/70665214.jpg" width="480" height="480"/>
