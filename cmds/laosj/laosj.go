@@ -195,7 +195,7 @@ func main() {
 		},
 		cli.BoolFlag{
 			Name:        "all, a",
-			Usage:       "false for get only on image from source, true for get all images",
+			Usage:       "false for getting only one image or one page images from source, true for get all images",
 			Destination: &appConfig.All,
 		},
 		cli.IntFlag{
