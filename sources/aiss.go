@@ -15,22 +15,22 @@
 package sources
 
 import (
-	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
-	"sync"
+	"time"
 
 	"github.com/songtianyi/laosj/downloader"
 	"github.com/songtianyi/rrframework/config"
-	"github.com/songtianyi/rrframework/connector/redis"
-	"github.com/songtianyi/rrframework/storage"
 )
 
 var (
-	kmlock sync.Mutex
+	oss = "http://com-pmkoo-img.oss-cn-beijing.aliyuncs.com/picture/"
+)
+
+const (
+	AISS_DEFAULT_WAITING_QUEUE = downloader.WAITTING_KEY_PREFIX + ":WAITING:AISS"
 )
 
 type ReqBody struct {
@@ -38,21 +38,33 @@ type ReqBody struct {
 	userId int
 }
 
-const (
-	DEFAULT_WAITING_QUEUE = downloader.WAITTING_KEY_PREFIX + ":WAITING:AISS"
-)
-
-type Aiss struct {
-	limit uint32 // concurrency limit
+type SuiteEOF struct {
 }
 
-func NewAiss(limit int) SourceWrapper {
-	return &Aiss{}
+func (s *SuiteEOF) Error() string {
+	return "EOF"
+}
+
+type Aiss struct {
+	name string // source name
+	urls chan downloader.Url
+	dq   string // destination queue
+	sema chan struct{}
+	max  int // max images to get every req
+}
+
+func NewAiss(name string, dq string, limit int) SourceWrapper {
+	return &Aiss{
+		dq:   dq,
+		sema: make(chan struct{}, limit),
+		max:  10,
+		name: name,
+	}
 }
 
 func (s *Aiss) getSuiteList(page int) ([]byte, error) {
 	uri := "http://api.pmkoo.cn/aiss/suite/suiteList.do"
-	para := "page=" + strconv.FormatInt(int64(page), 10) + "&userId=153044"
+	para := "page=" + strconv.FormatInt(int64(page), s.max) + "&userId=153044"
 	client := &http.Client{}
 	req, err := http.NewRequest("POST", uri, strings.NewReader(para))
 	req.Header.Add("Host", "api.pmkoo.cn")
@@ -69,84 +81,83 @@ func (s *Aiss) getSuiteList(page int) ([]byte, error) {
 	return body, nil
 }
 
-func (s *Aiss) GetOne() []string {
-	return []string{"a"}
+func (s *Aiss) doOnce(pg int) error {
+	defer func() { <-s.sema }() // release
+	b, err := s.getSuiteList(pg)
+	if err != nil {
+		return err
+	}
+	jc, _ := rrconfig.LoadJsonConfigFromBytes(b)
+	// du, _ := jc.Dump()
+	// fmt.Println(du)
+	ics, err := jc.GetInterfaceSlice("data.list")
+	if err != nil {
+		return &SuiteEOF{}
+	}
+	for _, v := range ics {
+		vm := v.(map[string]interface{})
+		vsource := vm["source"].(map[string]interface{})
+		catlog := vsource["catalog"].(string)
+		pictureCount := int(vm["pictureCount"].(float64))
+		issue := int(vm["issue"].(float64))
+		for j := 0; j < pictureCount; j++ {
+			uri := oss + catlog + "/"
+			uri += strconv.FormatInt(int64(issue), 10) + "/"
+			uri += strconv.FormatInt(int64(j), 10) + ".jpg"
+			s.urls <- downloader.Url{
+				V: uri,
+			}
+		}
+	}
+	return nil
 }
-
-func (s *Aiss) GetAll() []string {
-	return []string{"a", "b"}
+func (s *Aiss) waitCloser() {
+	tick := time.Tick(2 * time.Second)
+loop:
+	for {
+		select {
+		case <-tick:
+			if len(s.urls) < 1 {
+				close(s.urls)
+				break loop
+			}
+			break
+		}
+	}
 }
-
-func (s *Aiss) do() {
-	//
-	oss := "http://com-pmkoo-img.oss-cn-beijing.aliyuncs.com/picture/"
-	sema := make(chan struct{}, 10)
+func (s *Aiss) GetOne() {
+	s.doOnce(1)
+	s.waitCloser()
+}
+func (s *Aiss) GetAll() {
 	page := 1
 	ok := true
 
-	err, rc := rrredis.GetRedisClient("127.0.0.1:6379")
-	if err != nil {
-		panic(err)
-	}
-	km := make(map[string]bool)
 	for ok {
 		select {
-		case sema <- struct{}{}:
+		case s.sema <- struct{}{}:
 			go func(pg int) {
-				defer func() { <-sema }() // release
-				b, err := s.getSuiteList(pg)
-				if err != nil {
-					fmt.Println(err)
+				if err := s.doOnce(pg); err != nil {
 					ok = false
-					return
-				}
-				jc, _ := rrconfig.LoadJsonConfigFromBytes(b)
-				ics, err := jc.GetInterfaceSlice("data.list")
-				if err != nil {
-					fmt.Println(err)
-					ok = false
-					return
-				}
-				for _, v := range ics {
-					vm := v.(map[string]interface{})
-					vsource := vm["source"].(map[string]interface{})
-					catlog := vsource["catalog"].(string)
-					pictureCount := int(vm["pictureCount"].(float64))
-					issue := int(vm["issue"].(float64))
-					for j := 0; j < pictureCount; j++ {
-						uri := oss + catlog + "/"
-						uri += strconv.FormatInt(int64(issue), 10) + "/"
-						uri += strconv.FormatInt(int64(j), 10) + ".jpg"
-						key := "DATA:IMAGE:" + catlog + ":" + strconv.FormatInt(int64(issue), 10)
-						kmlock.Lock()
-						km[key] = true
-						kmlock.Unlock()
-						if _, err := rc.RPush(key, uri); err != nil {
-							fmt.Println(err)
-						}
-					}
 				}
 			}(page)
-			page += 1
+			page++
 		}
 	}
-	var wg sync.WaitGroup
-	for k := range km {
-		wg.Add(1)
-		go func(k string) {
-			defer wg.Done()
-			_ = os.MkdirAll("/data/sexx/pmkoo/"+k, os.ModeDir)
-			d := &downloader.RedisDownloader{
-				ConcurrencyLimit: 10,
-				UrlChannelFactor: 10,
-				RedisConnStr:     "127.0.0.1:6379",
-				SourceQueue:      k,
-				Store:            rrstorage.CreateLocalDiskStorage("/data/sexx/pmkoo/" + k),
-			}
-			go d.Start()
-			d.WaitCloser()
-		}(k)
-	}
-	wg.Wait()
+	s.waitCloser()
+}
 
+func (s *Aiss) SetReceiver(c chan downloader.Url) {
+	s.urls = c
+}
+func (s *Aiss) Receiver() chan downloader.Url {
+	return s.urls
+}
+
+func (s *Aiss) Destination() string {
+	return s.dq
+}
+
+func (s *Aiss) Name() string {
+	return s.name
 }

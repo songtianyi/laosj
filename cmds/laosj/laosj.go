@@ -6,6 +6,11 @@ import (
 	"os"
 	"time"
 
+	"github.com/songtianyi/rrframework/logs"
+	"github.com/songtianyi/rrframework/storage"
+
+	"github.com/songtianyi/rrframework/connector/redis"
+
 	"github.com/songtianyi/laosj/downloader"
 	"github.com/songtianyi/laosj/sources"
 
@@ -13,10 +18,11 @@ import (
 )
 
 type AppConfig struct {
-	Climit int
-	All    bool
-	Mode   int
-	Redis  string
+	CClimit int
+	DClimit int
+	All     bool
+	Mode    int
+	Redis   string
 }
 
 var appConfig *AppConfig
@@ -24,30 +30,53 @@ var appConfig *AppConfig
 func init() {
 	appConfig = &AppConfig{}
 }
-
-func dealMode(urls []string) {
+func startRealTimeDownloader(source sources.SourceWrapper) {
+	d := &downloader.RealtimeDownloader{
+		ConcurrencyLimit: appConfig.DClimit,
+		UrlChannelFactor: 10,
+		Store:            rrstorage.CreateLocalDiskStorage("/data/sexx/" + source.Name()),
+		Urls:             source.Receiver(),
+	}
+	d.Start()
+}
+func dealMode(source sources.SourceWrapper) error {
 	switch appConfig.Mode {
 	case downloader.REALTIME:
-		fmt.Println(urls)
+		startRealTimeDownloader(source)
 		break
 	case downloader.REDIS:
-		fmt.Println(urls)
+		// connect to redis
+		err, rc := rrredis.GetRedisClient(appConfig.Redis)
+		if err != nil {
+			return err
+		}
+		for v := range source.Receiver() {
+			if _, err := rc.RPush(source.Destination(), v.V); err != nil {
+				logs.Error("push", v.V, "to", source.Destination(), "failed")
+			}
+		}
 		break
 	}
+	return nil
 }
 
-func dealTestOrNot(source sources.SourceWrapper) []string {
+func dealTestOrNot(source sources.SourceWrapper) sources.SourceWrapper {
 	if appConfig.All {
-		return source.GetAll()
+		go func() {
+			source.GetAll()
+		}()
 	} else {
-		return source.GetOne()
+		go func() {
+			source.GetOne()
+		}()
 	}
+	return source
 }
 func aissHandler(c *cli.Context) error {
 	fmt.Println(appConfig)
-	aissSource := sources.NewAiss(c.Int("c"))
-	dealMode(dealTestOrNot(aissSource))
-	return nil
+	aissSource := sources.NewAiss("aiss", c.String("dq"), appConfig.CClimit)
+	aissSource.SetReceiver(make(chan downloader.Url, 100))
+	return dealMode(dealTestOrNot(aissSource))
 }
 
 func drainHandler(c *cli.Context) error {
@@ -65,13 +94,20 @@ func main() {
 			Email: "songtianyi630@163.com",
 		},
 	}
-	app.Copyright = "(c) 1999 Serious Enterprise"
+	app.Copyright = "(c) 2018 songtianyi"
 	app.Commands = []cli.Command{
 		{
 			Name:    "aiss",
 			Aliases: []string{"aiss"},
 			Usage:   "crawl aiss images",
 			Action:  aissHandler,
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "destination_queue, dq",
+					Value: sources.AISS_DEFAULT_WAITING_QUEUE,
+					Usage: "aiss default destination queue",
+				},
+			},
 		},
 		{
 			Name:    "drain",
@@ -80,7 +116,7 @@ func main() {
 			Action:  drainHandler,
 			Flags: []cli.Flag{
 				cli.StringFlag{
-					Name:  "queue, q",
+					Name:  "source_queue, sq",
 					Value: downloader.URL_KEY_PREFIX,
 					Usage: "key for url queue",
 				},
@@ -89,10 +125,16 @@ func main() {
 	}
 	app.Flags = []cli.Flag{
 		cli.IntFlag{
-			Name:        "climit, c",
+			Name:        "cclimit, ccl",
 			Value:       10,
 			Usage:       "concurrency limit for crawling, used when getting all images from source site",
-			Destination: &appConfig.Climit,
+			Destination: &appConfig.CClimit,
+		},
+		cli.IntFlag{
+			Name:        "dclimit, dcl",
+			Value:       3,
+			Usage:       "concurrency limit for downloading",
+			Destination: &appConfig.DClimit,
 		},
 		cli.BoolFlag{
 			Name:        "all, a",

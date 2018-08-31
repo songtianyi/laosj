@@ -33,7 +33,7 @@ const (
 
 // Struct channel
 type Url struct {
-	v string
+	V string
 }
 
 // RedisDownloader get urls from redis SourceQueue
@@ -82,7 +82,7 @@ loop2:
 			// be stopped
 			for url := range s.urls {
 				// push back to redis queue
-				if _, err := rc.RPush(s.SourceQueue, url.v); err != nil {
+				if _, err := rc.RPush(s.SourceQueue, url.V); err != nil {
 					logs.Error(err)
 				}
 			}
@@ -98,20 +98,20 @@ loop2:
 				break loop2
 			}
 			go func() {
-				if err := s.download(url.v); err != nil {
+				if err := s.download(url.V); err != nil {
 					// download fail
 					// push back to redis
-					logs.Error("Download %s fail, %s", url.v, err)
-					if _, err := rc.RPush(s.SourceQueue, url.v); err != nil {
+					logs.Error("Download %s fail, %s", url.V, err)
+					if _, err := rc.RPush(s.SourceQueue, url.V); err != nil {
 						logs.Error("Push back to redis failed, %s", err)
 					}
 				} else {
 					// download success
-					// push downloaded url to cache
+					// cache downloaded urls
 					if err := rc.HMSet(URL_CACHE_KEY, map[string]string{
-						url.v: "1",
+						url.V: "1",
 					}); err != nil {
-						logs.Error("Push to cache failed, %s", err)
+						logs.Error("cache downloaded url failed, %s", err)
 					}
 				}
 			}()
@@ -220,7 +220,7 @@ loop:
 		case <-s.flag:
 			// be stopped
 			break loop
-		case s.urls <- Url{v: url}:
+		case s.urls <- Url{V: url}:
 			// trying to push url to urls channel
 		}
 	}
