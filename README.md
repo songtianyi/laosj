@@ -15,33 +15,48 @@
 ### CLI
 
 ```shell
-go install github.com/songtianyi/laosj
+go install github.com/songtianyi/laosj/cmds/laosj
 ```
 
 ### 图片源
 
 * aiss(已不可用)
 
-  ```
+  ```shell
   ./laosj help aiss
   ./laosj aiss 
   ```
 
-* douban相册
+* [douban相册](https://www.douban.com/photos/album/105181925/)
 
   ```shell
+  # help
   ./laosj help douban
-  ./laosj douban --sp 1
+  # 测试用
+  ./laosj douban
+  # 火力全开
+  ./laosj --all --dir /your/local/disk/path douban --sp 1 --lp 254
+  # 随意开火
+  ./laosj --all --dir /your/local/disk/path douban --album_id 105181925 --sp 1 --lp 23
   ```
 
-* [妹子图](http://meizitu.com/)(待重构)
+* [妹子图](http://meizitu.com/)
+
+  ```shell
+  ./laosj help mzitu
+  # 测试用
+  ./laosj mzitu
+  # 火力全开
+  ./laosj --all --dir /your/local/disk/path mzitu --sg 15850 --eg 15900
+  ```
+
+* [妹子图自拍](http://www.mzitu.com/zipai/)(待重构)
 
 * [javlibrary](http://www.javlibrary.com/cn/)(待重构)
-> 可以直接下载Release的二进制文件使用
-
 ### 代码上手
 
 ###### 下载
+
 ```shell
 go get -u -v github.com/songtianyi/laosj
 ```
