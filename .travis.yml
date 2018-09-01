@@ -21,7 +21,7 @@ install:
 
 script:
     - go get ./...
-    - go install cmds/laosj
+    - go install github.com/songtianyi/laosj/cmds/laosj
 
 deploy:
   provider: releases
