@@ -8,7 +8,7 @@
 [![logo](https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTaiDDQDv9P90h7lu9jARb1O8i6hmVMpgEuK9qY57l0CZjRVue2)](https://github.com/songtianyi/laosj)
 
 
-基于goquery的轻量级爬虫, 支持分布式爬取和下载。
+基于goquery的轻量级爬图工具。
 ### 展示
 ![laosj-demo](http://owm6k6w0y.bkt.clouddn.com/laosj-demo.gif)
 
