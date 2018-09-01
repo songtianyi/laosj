@@ -31,11 +31,6 @@ const (
 	URL_CACHE_KEY = URL_KEY_PREFIX + ":DOWNLOADED" // Key for downloaded url cache
 )
 
-// Struct channel
-type Url struct {
-	V string
-}
-
 // RedisDownloader get urls from redis SourceQueue
 // and download them concurrently
 // then save downloaded binary to storage

@@ -1,6 +1,8 @@
 package sources
 
 import (
+	"errors"
+
 	"github.com/songtianyi/laosj/downloader"
 )
 
@@ -15,9 +17,5 @@ type SourceWrapper interface {
 	Name() string
 }
 
-type SourceEOF struct {
-}
-
-func (s *SourceEOF) Error() string {
-	return "EOF"
-}
+// end of source error
+var EOS = errors.New("End of source")

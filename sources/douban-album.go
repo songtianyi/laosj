@@ -32,7 +32,7 @@ const (
 )
 
 type DoubanAlbum struct {
-	name  string              //source name
+	name  string              // source name
 	album string              // album id
 	ps    int                 // page size
 	sp    int                 // start page
@@ -59,7 +59,9 @@ func NewDoubanAlbum(name string, album string, ps int, sp int, lp int, dq string
 }
 func (s *DoubanAlbum) GetOne() {
 	s.sema <- struct{}{}
-	s.doOnce(s.sp)
+	if err := s.doOnce(s.sp); err != nil {
+		logs.Error(err)
+	}
 	s.waitCloser()
 }
 
@@ -72,7 +74,11 @@ func (s *DoubanAlbum) GetAll() {
 		case s.sema <- struct{}{}:
 			go func(pg int) {
 				if err := s.doOnce(pg); err != nil {
-					ok = false
+					logs.Error(err)
+					if err == EOS {
+						// end
+						ok = false
+					} // continue
 				}
 			}(page)
 			page++
@@ -84,7 +90,7 @@ func (s *DoubanAlbum) GetAll() {
 func (s *DoubanAlbum) doOnce(page int) error {
 	defer func() { <-s.sema }() // release
 	if page > s.lp {
-		return &SourceEOF{}
+		return EOS
 	}
 	startV := strconv.Itoa(page * s.ps)
 	url := albumPrefix + "/" + s.album + "/?start=" + startV
@@ -135,7 +141,7 @@ func (s *DoubanAlbum) Name() string {
 }
 
 func (s *DoubanAlbum) waitCloser() {
-	tick := time.Tick(30 * time.Second)
+	tick := time.Tick(6 * time.Second)
 	logs.Alert("closing source url channel...")
 loop:
 	for {

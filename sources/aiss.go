@@ -89,7 +89,7 @@ func (s *Aiss) doOnce(pg int) error {
 	// fmt.Println(du)
 	ics, err := jc.GetInterfaceSlice("data.list")
 	if err != nil {
-		return &SourceEOF{}
+		return EOS
 	}
 	for _, v := range ics {
 		vm := v.(map[string]interface{})
@@ -109,7 +109,7 @@ func (s *Aiss) doOnce(pg int) error {
 	return nil
 }
 func (s *Aiss) waitCloser() {
-	tick := time.Tick(30 * time.Second)
+	tick := time.Tick(6 * time.Second)
 	logs.Alert("closing source url channel...")
 loop:
 	for {
@@ -125,7 +125,9 @@ loop:
 }
 func (s *Aiss) GetOne() {
 	s.sema <- struct{}{}
-	s.doOnce(1) // 1-based
+	if err := s.doOnce(1); err != nil {
+		logs.Error(err)
+	} // 1-based
 	s.waitCloser()
 }
 func (s *Aiss) GetAll() {
@@ -137,7 +139,11 @@ func (s *Aiss) GetAll() {
 		case s.sema <- struct{}{}:
 			go func(pg int) {
 				if err := s.doOnce(pg); err != nil {
-					ok = false
+					logs.Error(err)
+					if err == EOS {
+						// end
+						ok = false
+					} // continue
 				}
 			}(page)
 			page++

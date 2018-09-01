@@ -53,7 +53,7 @@ loop2:
 				break loop2
 			}
 			go func() {
-				if err := s.download(url.V); err != nil {
+				if err := s.download(url); err != nil {
 					// download fail
 					// push back to redis
 					logs.Error("Download %s fail, %s", url.V, err)
@@ -90,7 +90,7 @@ loop:
 	}
 }
 
-func (s *RealtimeDownloader) download(url string) error {
+func (s *RealtimeDownloader) download(url Url) error {
 
 	defer func() { <-s.sema }() // release
 
@@ -100,7 +100,11 @@ func (s *RealtimeDownloader) download(url string) error {
 			Dial: func(network, addr string) (net.Conn, error) { return net.DialTimeout(network, addr, 3*time.Second) },
 		},
 	}
-	response, err := client.Get(url)
+	req, err := http.NewRequest("GET", url.V, nil)
+	if url.Header != nil {
+		req.Header = url.Header
+	}
+	response, err := client.Do(req)
 	if err != nil {
 		return err
 	}
@@ -115,7 +119,7 @@ func (s *RealtimeDownloader) download(url string) error {
 		return err
 	}
 
-	urlv := strings.Split(url, "/")
+	urlv := strings.Split(url.V, "/")
 	if len(urlv) < 1 {
 		return fmt.Errorf("invalid url %s", url)
 	}

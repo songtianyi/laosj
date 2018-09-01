@@ -18,12 +18,13 @@ import (
 )
 
 type AppConfig struct {
-	CClimit int
-	DClimit int
-	All     bool
-	Mode    int
-	Redis   string
-	Dir     string
+	CClimit      int
+	DClimit      int
+	All          bool
+	Mode         int
+	Redis        string
+	Dir          string
+	ReceiverSize int
 }
 
 var appConfig *AppConfig
@@ -75,7 +76,7 @@ func dealTestOrNot(source sources.SourceWrapper) sources.SourceWrapper {
 }
 func aissHandler(c *cli.Context) error {
 	aissSource := sources.NewAiss(c.String("sub"), c.String("dq"), appConfig.CClimit)
-	aissSource.SetReceiver(make(chan downloader.Url, 100))
+	aissSource.SetReceiver(make(chan downloader.Url, appConfig.ReceiverSize))
 	return dealMode(dealTestOrNot(aissSource))
 }
 
@@ -89,11 +90,25 @@ func doubanAlbumHandler(c *cli.Context) error {
 		c.String("dq"),
 		appConfig.CClimit)
 	logs.Debug(doubanAlbumSource)
-	doubanAlbumSource.SetReceiver(make(chan downloader.Url, 100))
+	doubanAlbumSource.SetReceiver(make(chan downloader.Url, appConfig.ReceiverSize))
 	return dealMode(dealTestOrNot(doubanAlbumSource))
 }
 
+func mzituHandler(c *cli.Context) error {
+	mzituSource := sources.NewMzitu(
+		c.String("sub"),
+		c.Int("sg"),
+		c.Int("eg"),
+		c.String("dq"),
+		appConfig.CClimit,
+	)
+	logs.Debug(mzituSource)
+	mzituSource.SetReceiver(make(chan downloader.Url, appConfig.ReceiverSize))
+	return dealMode(dealTestOrNot(mzituSource))
+}
+
 func drainHandler(c *cli.Context) error {
+	// TODO
 	return nil
 }
 
@@ -167,6 +182,33 @@ func main() {
 			},
 		},
 		{
+			Name:    "mzitu",
+			Aliases: []string{"mzitu"},
+			Action:  mzituHandler,
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "subdirectory, sub",
+					Value: "mzitu",
+					Usage: "storage subdir",
+				},
+				cli.IntFlag{
+					Name:  "start_group, sg",
+					Value: 1,
+					Usage: "start group id number, include itsef",
+				},
+				cli.IntFlag{
+					Name:  "end_group, eg",
+					Value: 100,
+					Usage: "end group id number, include itself",
+				},
+				cli.StringFlag{
+					Name:  "destination_queue, dq",
+					Value: sources.MZITU_WAITTING_QUEUE,
+					Usage: "mzitu default destination queue",
+				},
+			},
+		},
+		{
 			Name:    "drain",
 			Aliases: []string{"drain"},
 			Usage:   "drain redis url queue",
@@ -189,7 +231,7 @@ func main() {
 		},
 		cli.IntFlag{
 			Name:        "dclimit, dcl",
-			Value:       3,
+			Value:       1,
 			Usage:       "concurrency limit for downloading",
 			Destination: &appConfig.DClimit,
 		},
@@ -215,6 +257,12 @@ func main() {
 			Value:       "/Volumes/songtianyi/sexx",
 			Usage:       "the local disk storage path prefix, no slash in the end",
 			Destination: &appConfig.Dir,
+		},
+		cli.IntFlag{
+			Name:        "receiver_size, rs",
+			Value:       100,
+			Usage:       "set the size of channel which used by source to cache urls",
+			Destination: &appConfig.ReceiverSize,
 		},
 	}
 	err := app.Run(os.Args)
