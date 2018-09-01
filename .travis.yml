@@ -16,10 +16,12 @@ install:
     # dep for laosj
     - go get github.com/PuerkitoBio/goquery
     - go get github.com/songtianyi/rrframework
+    - go get github.com/urfave/cli
 
 
 script:
-    - go install cmds/laosj/laosj.go
+    - go get ./...
+    - go install cmds/laosj
 
 deploy:
   provider: releases
