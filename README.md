@@ -77,7 +77,3 @@ git clone https://github.com/golang/net.git
 cd cmds/laosj/ && go build .
 ./laosj douban --sp 1
 ```
-
-### 微信交流群
-
-### <img src="http://owm6k6w0y.bkt.clouddn.com/17-9-21/70665214.jpg" width="480" height="480"/>
